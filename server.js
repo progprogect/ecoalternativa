@@ -107,7 +107,7 @@ app.post('/api/send-email', async (req, res) => {
 
 // Главная страница
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // API для получения статистики (для разработки)
