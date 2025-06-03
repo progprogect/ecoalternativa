@@ -5,7 +5,6 @@
 
 class FormHandler {
   constructor() {
-    this.apiEndpoint = '/api/send-email';
     this.fallbackEmail = 'progprogect@gmail.com';
     this.contactInfo = {
       phones: ['+375 (44) 77-33-238', '+7 (499) 923-38-15'],
@@ -129,47 +128,27 @@ class FormHandler {
       };
     } catch (error) {
       console.log('❌ Ошибка отправки через EmailJS:', error.message);
-    }
-
-    // Если EmailJS не удался - пытаемся через API сервера
-    try {
-      console.log('📧 Попытка отправки email через API...');
-      const apiResult = await this.sendToAPI(emailData);
       
-      if (apiResult.success) {
-        console.log('✅ Email успешно отправлен через API');
-        
-        // Также сохраняем локально для учета
-        this.saveToLocalStorage(emailData);
-        
-        return { 
-          success: true, 
-          message: 'Заявка отправлена! Мы получили ваши данные и свяжемся в ближайшее время.' 
-        };
-      }
-    } catch (error) {
-      console.log('❌ Ошибка отправки через API:', error.message);
+      // Если EmailJS не сработал - сохраняем локально и показываем контакты
+      console.log('💾 Сохраняем заявку локально...');
+      this.saveToLocalStorage(emailData);
+      
+      // Отправляем уведомление в Telegram (если возможно)
+      this.sendTelegramNotification(emailData);
+      
+      // Логируем заявку
+      console.log('📧 Новая заявка сохранена:', {
+        subject: emailData.subject,
+        formData: emailData.formData,
+        timestamp: emailData.timestamp
+      });
+
+      // Возвращаем успешный результат с контактной информацией
+      return { 
+        success: true, 
+        message: `Заявка принята! Мы получили ваши данные и свяжемся в ближайшее время.\n\nДля срочной связи:\n📞 ${this.contactInfo.phones.join(' или ')}\n📧 ${this.contactInfo.email}` 
+      };
     }
-
-    // Если все методы не удались - сохраняем локально и показываем контакты
-    console.log('💾 Сохраняем заявку локально...');
-    this.saveToLocalStorage(emailData);
-    
-    // Отправляем уведомление в Telegram (если возможно)
-    this.sendTelegramNotification(emailData);
-    
-    // Логируем заявку
-    console.log('📧 Новая заявка сохранена:', {
-      subject: emailData.subject,
-      formData: emailData.formData,
-      timestamp: emailData.timestamp
-    });
-
-    // Возвращаем успешный результат с контактной информацией
-    return { 
-      success: true, 
-      message: `Заявка принята! Мы получили ваши данные и свяжемся в ближайшее время.\n\nДля срочной связи:\n📞 ${this.contactInfo.phones.join(' или ')}\n📧 ${this.contactInfo.email}` 
-    };
   }
 
   /**
@@ -202,25 +181,6 @@ class FormHandler {
     } catch (error) {
       console.log('❌ Не удалось отправить уведомление в Telegram:', error.message);
     }
-  }
-
-  /**
-   * Отправка через API (для будущего использования)
-   */
-  async sendToAPI(emailData) {
-    const response = await fetch(this.apiEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(emailData)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    return await response.json();
   }
 
   /**
